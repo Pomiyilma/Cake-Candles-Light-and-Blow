@@ -9,7 +9,7 @@ const cakeImg = document.querySelector(".cake");
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const WEBCAM_WIDTH = isMobile ? 240 : 300;
 const WEBCAM_HEIGHT = isMobile ? 180 : 225;
-const BLOW_THRESHOLD = 75; // how sensitive the mic is
+const BLOW_THRESHOLD = isMobile ? 40 : 75; // how sensitive the mic is
 const LIGHT_DISTANCE = 20; // how close match needs to be to light candles
 
 canvas.width = WEBCAM_WIDTH;
@@ -178,7 +178,12 @@ let isBlowDetectionActive = false;
 
 async function initBlowDetection() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
 
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();

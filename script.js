@@ -186,10 +186,12 @@ async function initBlowDetection() {
     });
 
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    await audioContext.resume();
+    
     analyser = audioContext.createAnalyser();
     microphone = audioContext.createMediaStreamSource(stream);
 
-    analyser.fftSize = 256;
+    analyser.fftSize = 512;
     microphone.connect(analyser);
 
     isBlowDetectionActive = true;
@@ -200,15 +202,41 @@ async function initBlowDetection() {
   }
 }
 
+// function detectBlow() {
+//   if (!isBlowDetectionActive) return;
+
+//   const dataArray = new Uint8Array(analyser.frequencyBinCount);
+//   analyser.getByteFrequencyData(dataArray);
+
+//   const volume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+//   if (volume > BLOW_THRESHOLD && isCakeLit && !isCandlesBlownOut) {
+//     blowOutCandles();
+//   }
+
+//   requestAnimationFrame(detectBlow);
+// }
 function detectBlow() {
   if (!isBlowDetectionActive) return;
 
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
+  const dataArray = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(dataArray);
 
-  const volume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+  let sum = 0;
 
-  if (volume > BLOW_THRESHOLD && isCakeLit && !isCandlesBlownOut) {
+  for (let i = 0; i < dataArray.length; i++) {
+    const value = (dataArray[i] - 128) / 128;
+    sum += value * value;
+  }
+
+  const volume = Math.sqrt(sum / dataArray.length) * 100;
+
+  console.log(volume);
+
+  // Lower threshold for mobile
+  const threshold = isMobile ? 8 : 15;
+
+  if (volume > threshold && isCakeLit && !isCandlesBlownOut) {
     blowOutCandles();
   }
 
